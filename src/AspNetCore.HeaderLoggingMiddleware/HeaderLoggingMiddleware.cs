@@ -10,11 +10,11 @@ namespace AspNetCore.HeaderLoggingMiddleware
 {
     public class HeaderLoggingMiddleware : IMiddleware
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<HeaderLoggingMiddleware> _logger;
         private readonly IHeaderLoggingMiddlewareOptions _headerLoggingMiddlewareOptions;
 
         public HeaderLoggingMiddleware(
-            ILogger logger,
+            ILogger<HeaderLoggingMiddleware> logger,
             IHeaderLoggingMiddlewareOptions headerLoggingMiddlewareOptions)
         {
             _logger = logger;
