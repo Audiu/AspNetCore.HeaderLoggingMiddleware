@@ -1,0 +1,62 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/configuration-reference
+version: 2.1
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
+jobs:
+  test-build-push:
+    machine: # executor type
+      image: ubuntu-2204:current
+      docker_layer_caching: true
+    steps:
+        - checkout
+#        - setup_remote_docker:
+#            docker_layer_caching: true
+        - run:
+            name: "Store the tag in the workspace"
+            command: |
+              mkdir workspace
+              [[ -z "${CIRCLE_PULL_REQUEST}" ]] && PR_TAG='' || PR_TAG="-pre.${CIRCLE_PULL_REQUEST##*/}"
+              echo "export TAG=2.0.$CIRCLE_BUILD_NUM$PR_TAG" > workspace/version_tag
+              cat workspace/version_tag
+        - run:
+            name: "Define Environment Variables at Runtime"
+            command: |
+              cat workspace/version_tag >> "$BASH_ENV"
+              echo "$BASH_ENV"
+              source "$BASH_ENV"
+        - persist_to_workspace:
+            root: workspace
+            paths:
+              - version_tag
+        - run:
+            name: "Run tests"
+            # We run the docker compose build, then fetch the test results from the volume and copy them to the host
+            # We handle the transform from trx to junit within the docker compose testrunner step
+            # see: https://stackoverflow.com/questions/35406213/how-to-copy-data-from-docker-volume-to-host
+            # command: |
+            #   docker-compose -f ./src/docker-compose.yml up --build --abort-on-container-exit --exit-code-from testrunner
+            #   mkdir test-results
+            #   docker volume ls
+            #   docker run --rm -v src_test-results:/src -v ./test-results:/dest alpine sh -c 'cp -Rv /src/* /dest/'
+            #   ls -la test-results
+            command: |
+              docker-compose -f ./src/docker-compose.yml up --build --abort-on-container-exit --exit-code-from testrunner
+        # - store_test_results:
+        #     path: test-results
+        - run:
+            name: "Publish NuGet packages"
+            command: |
+              docker build -f ./src/Dockerfile --pull --build-arg VERSION=$TAG --build-arg NUGET_URL=$NUGET_API_URL --build-arg NUGET_KEY=$NUGET_API_KEY --target package -t anc-hlm:$TAG ./src
+  
+# Orchestrate jobs using workflows
+# See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
+workflows:
+  build-test-push-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
+    # Inside the workflow, you define the jobs you want to run.
+    jobs:
+      - test-build-push:
+          context: 
+            - Global
+      
