@@ -53,6 +53,8 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
     steps:
+        - setup_remote_docker:
+           docker_layer_caching: true
         - checkout
         - attach_workspace:
             at: workspace
