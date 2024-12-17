@@ -59,8 +59,7 @@ jobs:
         - run:
             name: "Define Environment Variables at Runtime"
             command: |
-              source workspace/version_tag
-              echo "$BASH_ENV"
+              cat workspace/version_tag >> "$BASH_ENV"
               source "$BASH_ENV"
         - run:
             name: "Publish NuGet packages"
