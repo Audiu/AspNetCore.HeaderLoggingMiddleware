@@ -5,7 +5,7 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
 jobs:
-  test-build-push:
+  test-build-package:
     machine: # executor type
       image: ubuntu-2204:current
       docker_layer_caching: true
@@ -45,18 +45,43 @@ jobs:
               docker-compose -f ./src/docker-compose.yml up --build --abort-on-container-exit --exit-code-from testrunner
         # - store_test_results:
         #     path: test-results
+
+  publish:
+    docker:
+      - image: cimg/base:stable
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_PASSWORD
+    steps:
+        - checkout
+        - attach_workspace:
+            at: workspace
+        - run:
+            name: "Define Environment Variables at Runtime"
+            command: |
+              source workspace/version_tag
+              echo "$BASH_ENV"
+              source "$BASH_ENV"
         - run:
             name: "Publish NuGet packages"
             command: |
-              docker build -f ./src/Dockerfile --pull --build-arg VERSION=$TAG --build-arg NUGET_URL=$NUGET_API_URL --build-arg NUGET_KEY=$NUGET_API_KEY --target package -t anc-hlm:$TAG ./src
-  
+              docker build -f ./src/Dockerfile --pull --build-arg VERSION=$TAG --build-arg NUGET_URL=$NUGET_API_URL --build-arg NUGET_KEY=$NUGET_API_KEY --target publish -t anc-hlm:$TAG ./src
+
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
 workflows:
   build-test-push-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
     # Inside the workflow, you define the jobs you want to run.
     jobs:
-      - test-build-push:
+      - test-build-package:
           context: 
             - Global
-      
+      - hold:
+          type: approval
+          requires:
+            - test-build-package
+      - publish:
+          requires:
+            - hold
+          context: 
+            - Global
