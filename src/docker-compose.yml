@@ -1,0 +1,20 @@
+version: "2.4"
+services:
+  testrunner:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: testrunner
+      args:
+        VERSION: ${BUILD_NUMBER}
+    networks: ['stack']
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Integration
+    volumes:
+      - test-results:/test-results
+      
+networks:
+  stack:
+
+volumes:
+  test-results:
