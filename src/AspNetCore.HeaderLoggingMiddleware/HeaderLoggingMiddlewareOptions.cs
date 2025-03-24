@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AspNetCore.HeaderLoggingMiddleware
 {
@@ -66,7 +68,9 @@ namespace AspNetCore.HeaderLoggingMiddleware
         public HeaderLoggingMiddlewareOptions UseIpHeaderDetection(string scopeOutputKey, List<string> ipHeaderPrecedenceOrder)
         {
             ScopeOutputKey = scopeOutputKey;
-            IpHeaderPrecedenceOrder = ipHeaderPrecedenceOrder;
+            IpHeaderPrecedenceOrder = ipHeaderPrecedenceOrder?.Select(x => x.ToLower()).ToList() ??
+                                      throw new ArgumentNullException(nameof(ipHeaderPrecedenceOrder));
+            
             return this;
         }
     }
