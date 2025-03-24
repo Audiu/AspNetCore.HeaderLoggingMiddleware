@@ -34,6 +34,21 @@ namespace AspNetCore.HeaderLoggingMiddleware
                     kp => kp.Key,
                     kp => string.Join(", ", kp.Value));
 
+            if (!string.IsNullOrEmpty(_headerLoggingMiddlewareOptions.ScopeOutputKey) &&
+                _headerLoggingMiddlewareOptions.IpHeaderPrecedenceOrder.Any())
+            {
+                // Search through headers in order of precedence and add the resulting IP to the scope
+                foreach (var header in _headerLoggingMiddlewareOptions.IpHeaderPrecedenceOrder)
+                {
+                    if (headers.TryGetValue(header, out var ipHeaderValue))
+                    {
+                        scope[_headerLoggingMiddlewareOptions.ScopeOutputKey] = ipHeaderValue;
+
+                        break;
+                    }
+                }
+            }
+
             using (_logger.BeginScope(scope))
             {
                 await next(context);
