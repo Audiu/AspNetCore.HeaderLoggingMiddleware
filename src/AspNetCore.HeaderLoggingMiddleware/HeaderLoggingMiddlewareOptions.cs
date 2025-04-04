@@ -1,14 +1,20 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AspNetCore.HeaderLoggingMiddleware
 {
     public class HeaderLoggingMiddlewareOptions : IHeaderLoggingMiddlewareOptions
     {
         public HashSet<string> IncludeHeaders { get; }
+        
+        public string ScopeOutputKey { get; private set; }
+        public List<string> IpHeaderPrecedenceOrder { get; private set; }
 
         public HeaderLoggingMiddlewareOptions()
         {
             IncludeHeaders = new HashSet<string>();
+            IpHeaderPrecedenceOrder = new List<string>();
         }
 
         private void AddIncludeHeader(string header)
@@ -48,7 +54,7 @@ namespace AspNetCore.HeaderLoggingMiddleware
             AddIncludeHeader("X-Forwarded-For-Proto");
             return this;
         }
-
+        
         public HeaderLoggingMiddlewareOptions IncludeExtraHeaders(IEnumerable<string> extraHeaders)
         {
             foreach (var extraHeader in extraHeaders)
@@ -56,6 +62,15 @@ namespace AspNetCore.HeaderLoggingMiddleware
                 AddIncludeHeader(extraHeader);
             }
 
+            return this;
+        }
+        
+        public HeaderLoggingMiddlewareOptions UseIpHeaderDetection(string scopeOutputKey, List<string> ipHeaderPrecedenceOrder)
+        {
+            ScopeOutputKey = scopeOutputKey;
+            IpHeaderPrecedenceOrder = ipHeaderPrecedenceOrder?.Select(x => x.ToLower()).ToList() ??
+                                      throw new ArgumentNullException(nameof(ipHeaderPrecedenceOrder));
+            
             return this;
         }
     }
