@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace AspNetCore.HeaderLoggingMiddleware
 {
@@ -8,13 +7,12 @@ namespace AspNetCore.HeaderLoggingMiddleware
     {
         public HashSet<string> IncludeHeaders { get; }
         
-        public string ScopeOutputKey { get; private set; }
-        public List<string> IpHeaderPrecedenceOrder { get; private set; }
+        public List<HeaderPrecedenceDefinition> HeaderPrecedenceDefinitions { get; private set; }
 
         public HeaderLoggingMiddlewareOptions()
         {
             IncludeHeaders = new HashSet<string>();
-            IpHeaderPrecedenceOrder = new List<string>();
+            HeaderPrecedenceDefinitions = new List<HeaderPrecedenceDefinition>();
         }
 
         private void AddIncludeHeader(string header)
@@ -65,13 +63,18 @@ namespace AspNetCore.HeaderLoggingMiddleware
             return this;
         }
         
-        public HeaderLoggingMiddlewareOptions UseIpHeaderDetection(string scopeOutputKey, List<string> ipHeaderPrecedenceOrder)
+        public HeaderLoggingMiddlewareOptions AddHeaderPrecedence(string scopeOutputKey, IEnumerable<string> headerPrecedenceOrder)
         {
-            ScopeOutputKey = scopeOutputKey;
-            IpHeaderPrecedenceOrder = ipHeaderPrecedenceOrder?.Select(x => x.ToLower()).ToList() ??
-                                      throw new ArgumentNullException(nameof(ipHeaderPrecedenceOrder));
+            var definition = new HeaderPrecedenceDefinition(scopeOutputKey, headerPrecedenceOrder);
+            HeaderPrecedenceDefinitions.Add(definition);
             
             return this;
+        }
+        
+        [Obsolete("Use AddHeaderPrecedence instead. This method will be removed in a future version.")]
+        public HeaderLoggingMiddlewareOptions UseIpHeaderDetection(string scopeOutputKey, List<string> ipHeaderPrecedenceOrder)
+        {
+            return AddHeaderPrecedence(scopeOutputKey, ipHeaderPrecedenceOrder);
         }
     }
 }

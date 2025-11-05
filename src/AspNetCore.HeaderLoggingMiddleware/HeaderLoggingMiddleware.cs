@@ -34,16 +34,15 @@ namespace AspNetCore.HeaderLoggingMiddleware
                     kp => kp.Key,
                     kp => string.Join(", ", kp.Value));
 
-            if (!string.IsNullOrEmpty(_headerLoggingMiddlewareOptions.ScopeOutputKey) &&
-                _headerLoggingMiddlewareOptions.IpHeaderPrecedenceOrder.Any())
+            // Process all header precedence definitions
+            foreach (var definition in _headerLoggingMiddlewareOptions.HeaderPrecedenceDefinitions)
             {
-                // Search through headers in order of precedence and add the resulting IP to the scope
-                foreach (var header in _headerLoggingMiddlewareOptions.IpHeaderPrecedenceOrder)
+                // Search through headers in order of precedence and add the first match to the scope
+                foreach (var header in definition.HeaderPrecedenceOrder)
                 {
-                    if (headers.TryGetValue(header, out var ipHeaderValue))
+                    if (headers.TryGetValue(header, out var headerValue))
                     {
-                        scope[_headerLoggingMiddlewareOptions.ScopeOutputKey] = ipHeaderValue;
-
+                        scope[definition.ScopeOutputKey] = headerValue;
                         break;
                     }
                 }
